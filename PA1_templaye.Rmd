@@ -1,0 +1,97 @@
+---
+title: "PA1_template"
+author: "Hemant"
+output: html_document
+---
+
+
+```{r, echo=FALSE}
+require(ggplot2)
+require(plyr)
+require(dplyr)
+```
+
+## Importing the file activity.csv
+
+```{r setup, echo=TRUE}
+activity<-read.csv("./repdata_data_activity/activity.csv", sep=",", header = TRUE)
+activity$date<-as.Date(activity$date)
+head(activity)
+```
+
+## Plotting histogram of total steps per day
+
+```{r histogram}
+#library(ggplot2)
+agg<-aggregate(steps~date, activity, sum)
+g<-ggplot(agg, aes(steps))
+g+geom_histogram(color="black", fill="#03FC49")
+```
+
+## Mean and Median of the steps taken each day.
+
+```{r}
+mean(activity$steps, na.rm=TRUE)
+median(activity$steps, na.rm=TRUE)
+```
+
+## Mean and Median of the total steps taken each day.
+
+```{r}
+mean(agg$steps, na.rm=TRUE)
+median(agg$steps, na.rm=TRUE)
+```
+
+## Time series plot of Steps vs Intervals 
+
+```{r}
+agg<-aggregate(steps~interval, activity, mean, na.rm=TRUE)
+g<-ggplot(agg, aes(interval, steps))
+g+geom_point(color="#0398FC")+geom_line(color="#FC0328")
+```
+
+## Interval with the highest number of steps
+
+```{r}
+agg[agg$steps==max(agg$steps),]$interval
+```
+
+## Imputing NA values in the dataset with the mean values of steps taken in a new dataset
+
+```{r imputing}
+activity_na<-activity
+activity_na[is.na(activity_na)]=mean(activity_na$steps, na.rm=TRUE)
+head(activity_na)
+```
+
+## Histogram of total steps taken each day
+
+```{r}
+agg<-aggregate(steps~date, activity_na, sum)
+g<-ggplot(agg, aes(steps))
+g+geom_histogram(color="black", fill="#0390FC")
+```
+
+## Mean and Median after imputing NA values
+
+```{r}
+mean(agg$steps, na.rm=TRUE)
+median(agg$steps, na.rm=FALSE)
+```
+
+The aggregated mean is same as before but the median differs. This is due to the presence of 37.38 in place of NA values in the dataset.
+
+## Using weekdays() analysis comparing average steps taken per 5-minute interval on weekends and weekdays 
+
+```{r}
+activity_na<-mutate(activity_na, day=weekdays(date))
+head(activity_na)
+sub_weekday<-filter(activity_na, day!=c("Saturday","Sunday"))
+sub_weekend<-filter(activity_na, day==c("Saturday","Sunday"))
+sub_weekday$day<-"Weekday"
+sub_weekend$day<-"Weekend"
+activity_day<-rbind(sub_weekday, sub_weekend)
+agg<-aggregate(steps~interval+day, activity_day, mean)
+g<-ggplot(agg, aes(interval, steps))
+g+geom_point(color="#75192E")+geom_line(color="#1057C2")+facet_grid(day~.)
+```
